@@ -1,0 +1,6 @@
+{
+  "name": "OmniPsyche - The Unified Psychometric Ecosystem",
+  "description": "Empirically validated master psychometric platform uniting HEXACO, ECR-R Attachment, RIASEC Career Matrix, Trait EQ, and 32 Neo-Brutalist character archetypes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

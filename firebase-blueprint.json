@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User private profile and synced psychometric vector",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "username": { "type": "string", "maxLength": 50 },
+        "friendCode": { "type": "string", "maxLength": 30 },
+        "avatarColor": { "type": "string", "maxLength": 30 },
+        "primaryArchetypeId": { "type": "string", "maxLength": 64 },
+        "archetypeTitle": { "type": "string", "maxLength": 100 },
+        "house": { "type": "string", "maxLength": 50 },
+        "lastActive": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "displayName", "username", "friendCode", "createdAt", "updatedAt"]
+    },
+    "PublicProfile": {
+      "title": "PublicProfile",
+      "description": "Public directory profile for friend discovery and comparison",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "username": { "type": "string", "maxLength": 50 },
+        "friendCode": { "type": "string", "maxLength": 30 },
+        "avatarColor": { "type": "string", "maxLength": 30 },
+        "primaryArchetypeId": { "type": "string", "maxLength": 64 },
+        "archetypeTitle": { "type": "string", "maxLength": 100 },
+        "house": { "type": "string", "maxLength": 50 },
+        "identityVariant": { "type": "string", "maxLength": 5 },
+        "attachmentStyle": { "type": "string", "maxLength": 50 },
+        "hollandCode": { "type": "string", "maxLength": 10 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "displayName", "username", "friendCode", "updatedAt"]
+    },
+    "FriendRecord": {
+      "title": "FriendRecord",
+      "description": "User connection record in the user's friend subcollection",
+      "type": "object",
+      "properties": {
+        "friendUid": { "type": "string", "maxLength": 128 },
+        "friendUsername": { "type": "string", "maxLength": 50 },
+        "friendDisplayName": { "type": "string", "maxLength": 100 },
+        "friendCode": { "type": "string", "maxLength": 30 },
+        "friendArchetypeId": { "type": "string", "maxLength": 64 },
+        "friendHouse": { "type": "string", "maxLength": 50 },
+        "addedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["friendUid", "friendUsername", "friendDisplayName", "friendCode", "addedAt"]
+    },
+    "CompatibilityDuel": {
+      "title": "CompatibilityDuel",
+      "description": "Two-person psychometric comparison challenge session",
+      "type": "object",
+      "properties": {
+        "duelId": { "type": "string", "maxLength": 128 },
+        "inviterUid": { "type": "string", "maxLength": 128 },
+        "inviterName": { "type": "string", "maxLength": 100 },
+        "inviterArchetypeId": { "type": "string", "maxLength": 64 },
+        "inviteeUid": { "type": "string", "maxLength": 128 },
+        "inviteeName": { "type": "string", "maxLength": 100 },
+        "inviteeArchetypeId": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "compatibilityScore": { "type": "number" },
+        "chemistryGrade": { "type": "string", "maxLength": 20 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["duelId", "inviterUid", "inviterName", "inviterArchetypeId", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private user profile and psychometric vector"
+    },
+    "/public_profiles/{userId}": {
+      "schema": "PublicProfile",
+      "description": "Publicly discoverable user psychometric summary for friend matchmaking"
+    },
+    "/users/{userId}/friends/{friendUid}": {
+      "schema": "FriendRecord",
+      "description": "User's friends connection list"
+    },
+    "/compatibility_duels/{duelId}": {
+      "schema": "CompatibilityDuel",
+      "description": "Shared compatibility duel challenges between two users"
+    }
+  }
+}
