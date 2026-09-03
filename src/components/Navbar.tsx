@@ -50,12 +50,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const navItems = [
-    { id: 'dashboard', label: 'DASHBOARD' },
-    { id: 'profile', label: 'MY PROFILE' },
-    { id: 'friends', label: 'FRIENDS & DUEL' },
-    { id: 'quicklab', label: 'QUICK-LAB' },
-    { id: 'directory', label: '32-ARCHETYPE CODEX' },
-    { id: 'teams', label: 'B2B TEAMS' }
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'profile', label: 'My Profile' },
+    { id: 'friends', label: 'Friends and Duel' },
+    { id: 'quicklab', label: 'Quick Lab' },
+    { id: 'teams', label: 'B2B teams' }
   ];
 
   return (
@@ -81,7 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Desktop Navigation Links */}
+        {/* Desktop Navigation Links: Only Dashboard, My Profile, Friends and Duel, Quick Lab, B2B teams, Science and terms */}
         <nav className="hidden lg:flex items-center gap-1.5 font-mono text-xs font-bold">
           {navItems.map((item) => (
             <button
@@ -96,40 +95,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               {item.label}
             </button>
           ))}
+
+          {/* Science and terms Button */}
+          <button
+            onClick={() => onOpenGlossary()}
+            className="px-3 py-1.5 brutal-border bg-white hover:bg-slate-100 text-[#0F172A] flex items-center gap-1.5 transition-all"
+            title="Psychometric Science & Terms Glossary"
+          >
+            <BookOpen size={13} className="text-indigo-600" />
+            <span>Science and terms</span>
+          </button>
         </nav>
 
         {/* Action Controls & Active Profile Pill */}
         <div className="hidden sm:flex items-center gap-2">
-          {/* Science & Glossary Button */}
-          <button
-            onClick={() => onOpenGlossary()}
-            className="brutal-btn bg-white hover:bg-slate-50 px-2.5 py-1 text-xs font-mono font-bold flex items-center gap-1.5 text-[#0F172A]"
-            title="Psychometric Science & Terms Glossary"
-          >
-            <BookOpen size={13} className="text-indigo-600" />
-            <span>SCIENCE & TERMS</span>
-          </button>
-
-          {/* Social Friends & Duel Button */}
-          <button
-            onClick={onOpenFriends}
-            className="brutal-btn bg-white hover:bg-slate-50 px-2.5 py-1 text-xs font-mono font-bold flex items-center gap-1.5 text-[#0F172A]"
-            title="Friends & Compatibility Duel Link"
-          >
-            <Users size={13} className="text-[#0F172A]" />
-            <span>FRIENDS</span>
-          </button>
-
-          {/* Test Button */}
-          <button
-            onClick={onStartFullAssessment}
-            className="brutal-btn bg-[#0F172A] text-white px-3 py-1 text-xs font-mono font-bold flex items-center gap-1"
-          >
-            <Play size={12} fill="currentColor" />
-            <span>TEST</span>
-          </button>
-
-          {/* Auth State Button */}
+          {/* Auth State Button / Profile Pill */}
           {user ? (
             <div className="relative">
               <button
@@ -144,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {userProfile?.displayName ? userProfile.displayName.charAt(0).toUpperCase() : 'Ψ'}
                 </div>
                 <span className="font-mono text-xs font-black text-[#0F172A] max-w-[110px] truncate">
-                  {userProfile?.displayName || 'My Profile'}
+                  {userProfile?.displayName || 'Profile'}
                 </span>
                 <ChevronRight size={13} className={`transition-transform text-slate-500 ${userDropdownOpen ? 'rotate-90' : ''}`} />
               </button>

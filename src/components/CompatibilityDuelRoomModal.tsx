@@ -313,22 +313,16 @@ export const CompatibilityDuelRoomModal: React.FC<CompatibilityDuelRoomModalProp
                     </span>
                   </div>
                 </div>
-                {duel.inviterVector && (
-                  <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-3 gap-1 text-center font-mono text-[10px]">
-                    <div className="bg-slate-50 p-1 brutal-border">
-                      <span className="block text-slate-500">HEXACO</span>
-                      <span className="font-bold text-[#0F172A]">{duel.inviterVector.hexaco.conscientiousness}% C</span>
-                    </div>
-                    <div className="bg-slate-50 p-1 brutal-border">
-                      <span className="block text-slate-500">ATTACH</span>
-                      <span className="font-bold text-[#0F172A]">{duel.inviterVector.attachment.style.split('-')[0]}</span>
-                    </div>
-                    <div className="bg-slate-50 p-1 brutal-border">
-                      <span className="block text-slate-500">RIASEC</span>
-                      <span className="font-bold text-[#0F172A]">{duel.inviterVector.riasec.hollandCode}</span>
-                    </div>
+                <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-2 gap-2 text-center font-mono text-[10px]">
+                  <div className="bg-slate-50 p-1.5 brutal-border">
+                    <span className="block text-slate-500 font-bold">ATTACHMENT</span>
+                    <span className="font-bold text-[#0F172A]">{duel.inviterAttachmentStyle?.split('-')[0] || 'Secure'}</span>
                   </div>
-                )}
+                  <div className="bg-slate-50 p-1.5 brutal-border">
+                    <span className="block text-slate-500 font-bold">HOLLAND RIASEC</span>
+                    <span className="font-bold text-[#0F172A]">{duel.inviterHollandCode || 'IAS'}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Partner B */}
@@ -352,22 +346,16 @@ export const CompatibilityDuelRoomModal: React.FC<CompatibilityDuelRoomModalProp
                     </span>
                   </div>
                 </div>
-                {duel.inviteeVector && (
-                  <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-3 gap-1 text-center font-mono text-[10px]">
-                    <div className="bg-slate-50 p-1 brutal-border">
-                      <span className="block text-slate-500">HEXACO</span>
-                      <span className="font-bold text-[#0F172A]">{duel.inviteeVector.hexaco.conscientiousness}% C</span>
-                    </div>
-                    <div className="bg-slate-50 p-1 brutal-border">
-                      <span className="block text-slate-500">ATTACH</span>
-                      <span className="font-bold text-[#0F172A]">{duel.inviteeVector.attachment.style.split('-')[0]}</span>
-                    </div>
-                    <div className="bg-slate-50 p-1 brutal-border">
-                      <span className="block text-slate-500">RIASEC</span>
-                      <span className="font-bold text-[#0F172A]">{duel.inviteeVector.riasec.hollandCode}</span>
-                    </div>
+                <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-2 gap-2 text-center font-mono text-[10px]">
+                  <div className="bg-slate-50 p-1.5 brutal-border">
+                    <span className="block text-slate-500 font-bold">ATTACHMENT</span>
+                    <span className="font-bold text-[#0F172A]">{duel.inviteeAttachmentStyle?.split('-')[0] || 'Secure'}</span>
                   </div>
-                )}
+                  <div className="bg-slate-50 p-1.5 brutal-border">
+                    <span className="block text-slate-500 font-bold">HOLLAND RIASEC</span>
+                    <span className="font-bold text-[#0F172A]">{duel.inviteeHollandCode || 'IAS'}</span>
+                  </div>
+                </div>
               </div>
             </div>
 

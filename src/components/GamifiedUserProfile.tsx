@@ -38,7 +38,12 @@ import {
   Activity,
   ChevronRight,
   LogIn,
-  BookOpen
+  BookOpen,
+  Download,
+  Trash2,
+  AlertTriangle,
+  History,
+  TrendingUp
 } from 'lucide-react';
 
 interface GamifiedUserProfileProps {
@@ -82,13 +87,23 @@ export const GamifiedUserProfile: React.FC<GamifiedUserProfileProps> = ({
   onOpenGlossary,
   onOpenAuth
 }) => {
-  const { user, userProfile, updateUserProfileData } = useAuth();
+  const { 
+    user, 
+    userProfile, 
+    updateUserProfileData, 
+    exportUserData, 
+    deleteUserAccountAndData 
+  } = useAuth();
   
   const [isEditingName, setIsEditingName] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState(userProfile?.displayName || '');
   const [selectedAvatarColor, setSelectedAvatarColor] = useState(userProfile?.avatarColor || '#FFE600');
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isUpdatingPrivacy, setIsUpdatingPrivacy] = useState(false);
 
   // Derive completed test IDs
   const completedIds = new Set(vector.completedTestIds || ['omni-core']);
@@ -766,6 +781,258 @@ export const GamifiedUserProfile: React.FC<GamifiedUserProfileProps> = ({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Priority 1: Privacy Controls & Selective Publishing */}
+      <div className="bg-white p-6 sm:p-7 brutal-border brutal-shadow-md space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b-2 border-[#0F172A]">
+          <div>
+            <h2 className="font-display font-black text-xl text-[#0F172A] flex items-center gap-2">
+              <ShieldCheck size={20} className="text-emerald-600" />
+              PRIVACY CONTROLS & SOCIAL PUBLISHING GATES
+            </h2>
+            <p className="font-mono text-xs text-slate-600 mt-0.5">
+              Control what information is published to public search or visible to peers in duel rooms.
+            </p>
+          </div>
+          <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-3 py-1 brutal-border">
+            OPT-IN PRIVACY BY DEFAULT
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Attachment Style Toggle */}
+          <div className="p-4 bg-slate-50 brutal-border flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Heart size={16} className="text-rose-500" />
+                <h4 className="font-display font-black text-sm text-[#0F172A]">
+                  Publish Attachment Style ({vector.attachment.style})
+                </h4>
+              </div>
+              <p className="font-mono text-xs text-slate-600 leading-snug">
+                When disabled (default), your attachment orientation is private to you and never listed in public search.
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                if (!user) return;
+                setIsUpdatingPrivacy(true);
+                const current = userProfile?.shareAttachmentStyle ?? false;
+                await updateUserProfileData({ shareAttachmentStyle: !current });
+                setIsUpdatingPrivacy(false);
+              }}
+              disabled={!user || isUpdatingPrivacy}
+              className={`brutal-btn px-4 py-2 font-mono text-xs font-black shrink-0 transition-colors ${
+                userProfile?.shareAttachmentStyle
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white text-slate-700'
+              }`}
+            >
+              {userProfile?.shareAttachmentStyle ? 'ENABLED' : 'DISABLED'}
+            </button>
+          </div>
+
+          {/* Holland Code Toggle */}
+          <div className="p-4 bg-slate-50 brutal-border flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Briefcase size={16} className="text-indigo-500" />
+                <h4 className="font-display font-black text-sm text-[#0F172A]">
+                  Publish Holland RIASEC Code ({vector.riasec.hollandCode})
+                </h4>
+              </div>
+              <p className="font-mono text-xs text-slate-600 leading-snug">
+                When disabled (default), your career vocational triad is omitted from the public directory.
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                if (!user) return;
+                setIsUpdatingPrivacy(true);
+                const current = userProfile?.shareHollandCode ?? false;
+                await updateUserProfileData({ shareHollandCode: !current });
+                setIsUpdatingPrivacy(false);
+              }}
+              disabled={!user || isUpdatingPrivacy}
+              className={`brutal-btn px-4 py-2 font-mono text-xs font-black shrink-0 transition-colors ${
+                userProfile?.shareHollandCode
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white text-slate-700'
+              }`}
+            >
+              {userProfile?.shareHollandCode ? 'ENABLED' : 'DISABLED'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Trajectory & Assessment Calibration Timeline */}
+      {userProfile?.vectorHistory && userProfile.vectorHistory.length > 0 && (
+        <div className="bg-white p-6 sm:p-7 brutal-border brutal-shadow-md space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b-2 border-[#0F172A]">
+            <div>
+              <h2 className="font-display font-black text-xl text-[#0F172A] flex items-center gap-2">
+                <History size={20} className="text-indigo-600" />
+                TRAIT CALIBRATION TRAJECTORY & HISTORY
+              </h2>
+              <p className="font-mono text-xs text-slate-600 mt-0.5">
+                Track how your psychometric vector evolves across calibration sessions.
+              </p>
+            </div>
+            <span className="font-mono text-xs font-bold bg-[#FFE600] px-3 py-1 brutal-border">
+              {userProfile.vectorHistory.length} SNAPSHOTS RECORDED
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left font-mono text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-100 border-b-2 border-[#0F172A]">
+                  <th className="p-2.5 font-black text-slate-800">TIMESTAMP</th>
+                  <th className="p-2.5 font-black text-slate-800">ARCHETYPE</th>
+                  <th className="p-2.5 font-black text-slate-800">CONSCIENTIOUSNESS</th>
+                  <th className="p-2.5 font-black text-slate-800">OPENNESS</th>
+                  <th className="p-2.5 font-black text-slate-800">EXTRAVERSION</th>
+                  <th className="p-2.5 font-black text-slate-800">AGREEABLENESS</th>
+                  <th className="p-2.5 font-black text-slate-800">TRAIT EQ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {userProfile.vectorHistory.map((snap, idx) => (
+                  <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50">
+                    <td className="p-2.5 text-slate-600 whitespace-nowrap">
+                      {new Date(snap.date).toLocaleDateString()} {new Date(snap.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="p-2.5 font-black text-[#0F172A]">
+                      {snap.archetypeCode}-{snap.variant}
+                    </td>
+                    <td className="p-2.5 text-slate-800 font-bold">{snap.conscientiousness}%</td>
+                    <td className="p-2.5 text-slate-800 font-bold">{snap.openness}%</td>
+                    <td className="p-2.5 text-slate-800 font-bold">{snap.extraversion}%</td>
+                    <td className="p-2.5 text-slate-800 font-bold">{snap.agreeableness}%</td>
+                    <td className="p-2.5 text-slate-800 font-bold">{snap.eqScore}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Priority 3: Data Governance & Sovereignty */}
+      <div className="bg-white p-6 sm:p-7 brutal-border brutal-shadow-md space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b-2 border-[#0F172A]">
+          <div>
+            <h2 className="font-display font-black text-xl text-[#0F172A] flex items-center gap-2">
+              <Download size={20} className="text-slate-800" />
+              DATA GOVERNANCE & SOVEREIGNTY
+            </h2>
+            <p className="font-mono text-xs text-slate-600 mt-0.5">
+              Export your full psychometric graph as a standard JSON archive or permanently delete your account.
+            </p>
+          </div>
+          <span className="font-mono text-xs font-bold bg-[#A3F7BF] text-emerald-950 px-3 py-1 brutal-border">
+            GDPR / CCPA COMPLIANT
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <button
+            onClick={async () => {
+              setIsExporting(true);
+              try {
+                const data = await exportUserData();
+                const jsonStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `omnipsyche_data_export_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } catch (err) {
+                console.error('Export failed:', err);
+              } finally {
+                setIsExporting(false);
+              }
+            }}
+            disabled={isExporting}
+            className="brutal-btn bg-[#0F172A] text-white py-3 px-5 font-mono text-xs font-black flex items-center justify-center gap-2 hover:bg-slate-800"
+          >
+            <Download size={16} className="text-[#FFE600]" />
+            <span>{isExporting ? 'PACKAGING DATA...' : 'DOWNLOAD MY DATA (JSON)'}</span>
+          </button>
+
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="brutal-btn bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-400 py-3 px-5 font-mono text-xs font-black flex items-center justify-center gap-2"
+          >
+            <Trash2 size={16} className="text-rose-600" />
+            <span>DELETE MY ACCOUNT & WIPE DATA</span>
+          </button>
+        </div>
+
+        {/* Delete Confirmation Modal Dialog */}
+        {showDeleteConfirm && (
+          <div className="p-4 bg-rose-50 brutal-border border-rose-400 space-y-3 mt-4 animate-in fade-in">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle size={20} className="text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-display font-black text-sm text-rose-950">
+                  PERMANENT DELETION WARNING
+                </h4>
+                <p className="font-mono text-xs text-rose-900 mt-1">
+                  This will permanently delete your authentication record, private psychological vectors, public profile, social friend connections, and duel records from the database. This action is irreversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={async () => {
+                  setIsDeleting(true);
+                  try {
+                    await deleteUserAccountAndData();
+                    setShowDeleteConfirm(false);
+                  } catch (err) {
+                    console.error('Delete account failed', err);
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={isDeleting}
+                className="brutal-btn bg-rose-600 text-white hover:bg-rose-700 py-2 px-4 font-mono text-xs font-black"
+              >
+                {isDeleting ? 'WIPING DATA...' : 'CONFIRM IRREVERSIBLE DELETION'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="brutal-btn bg-white text-slate-800 py-2 px-4 font-mono text-xs font-bold"
+              >
+                CANCEL
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Priority 2: Mandatory Clinical & Ethical Disclaimers */}
+      <div className="bg-[#FFFDF7] p-5 brutal-border border-slate-300 flex items-start gap-3.5">
+        <div className="w-8 h-8 bg-slate-200 brutal-border flex items-center justify-center font-display font-black text-slate-700 shrink-0">
+          ℹ️
+        </div>
+        <div className="space-y-1">
+          <h4 className="font-display font-black text-xs uppercase tracking-wider text-slate-800">
+            SCIENTIFIC SCOPE & NON-CLINICAL DISCLOSURE
+          </h4>
+          <p className="font-mono text-[11px] text-slate-600 leading-relaxed">
+            OmniPsyche is an exploratory educational and self-development platform based on peer-reviewed psychometric constructs (including HEXACO PI-R, Holland RIASEC, ECR-R Attachment, Trait EQ, and Duckworth Grit). It is explicitly not a diagnostic instrument, psychiatric evaluation, clinical assessment, or medical tool. Scores and archetype classifications reflect self-reported tendencies for interpersonal reflection.
+          </p>
         </div>
       </div>
 

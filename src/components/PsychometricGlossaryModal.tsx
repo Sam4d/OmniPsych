@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BookOpen, 
   X, 
@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   ExternalLink,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Sparkles
 } from 'lucide-react';
 
 interface PsychometricGlossaryModalProps {
@@ -218,14 +219,67 @@ export const GLOSSARY_ENTRIES: GlossaryEntry[] = [
   }
 ];
 
+const ALIAS_MAP: Record<string, string> = {
+  'grit': 'duckworth-grit',
+  'duckworth': 'duckworth-grit',
+  'duckworth-grit': 'duckworth-grit',
+  'shadow': 'subclinical-shadow',
+  'dark-triad': 'subclinical-shadow',
+  'subclinical-shadow': 'subclinical-shadow',
+  'neuro': 'neurodiversity-asrs-hsp',
+  'neurodiversity': 'neurodiversity-asrs-hsp',
+  'neurodiversity-asrs-hsp': 'neurodiversity-asrs-hsp',
+  'hsp': 'neurodiversity-asrs-hsp',
+  'riasec': 'riasec-onet',
+  'holland': 'riasec-onet',
+  'riasec-onet': 'riasec-onet',
+  'onet': 'riasec-onet',
+  'attachment': 'attachment-theory',
+  'attachment-theory': 'attachment-theory',
+  'gottman': 'attachment-theory',
+  'eq': 'trait-eq',
+  'trait-eq': 'trait-eq',
+  'variant': 'identity-variant',
+  'identity-variant': 'identity-variant',
+  'assertive': 'identity-variant',
+  'vector': 'continuous-vectors',
+  'vector-math': 'continuous-vectors',
+  'continuous-vectors': 'continuous-vectors',
+  'hexaco': 'hexaco'
+};
+
 export const PsychometricGlossaryModal: React.FC<PsychometricGlossaryModalProps> = ({
   isOpen,
   onClose,
   initialTermId
 }) => {
+  const resolvedTermId = initialTermId ? (ALIAS_MAP[initialTermId.toLowerCase()] || initialTermId) : 'hexaco';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [expandedId, setExpandedId] = useState<string | null>(initialTermId || 'hexaco');
+  const [expandedId, setExpandedId] = useState<string | null>(resolvedTermId);
+  const [highlightedId, setHighlightedId] = useState<string | null>(initialTermId ? resolvedTermId : null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync state whenever modal opens or initialTermId changes
+  useEffect(() => {
+    if (isOpen) {
+      const termToFocus = initialTermId ? (ALIAS_MAP[initialTermId.toLowerCase()] || initialTermId) : 'hexaco';
+      setExpandedId(termToFocus);
+      setHighlightedId(initialTermId ? termToFocus : null);
+      setSelectedCategory('all');
+      setSearchQuery('');
+
+      // Auto-scroll directly to the target term card
+      if (termToFocus) {
+        setTimeout(() => {
+          const el = document.getElementById(`glossary-entry-${termToFocus}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 150);
+      }
+    }
+  }, [isOpen, initialTermId]);
 
   if (!isOpen) return null;
 
@@ -329,12 +383,18 @@ export const PsychometricGlossaryModal: React.FC<PsychometricGlossaryModalProps>
             filteredEntries.map((entry) => {
               const Icon = entry.icon;
               const isExpanded = expandedId === entry.id;
+              const isTargeted = highlightedId === entry.id;
 
               return (
                 <div
+                  id={`glossary-entry-${entry.id}`}
                   key={entry.id}
                   className={`brutal-border transition-all ${
-                    isExpanded ? 'bg-white brutal-shadow-md' : 'bg-slate-50 hover:bg-white'
+                    isTargeted 
+                      ? 'ring-4 ring-[#FFE600] bg-white brutal-shadow-lg' 
+                      : isExpanded 
+                        ? 'bg-white brutal-shadow-md' 
+                        : 'bg-slate-50 hover:bg-white'
                   }`}
                 >
                   {/* Card Header Accordion */}
@@ -355,6 +415,12 @@ export const PsychometricGlossaryModal: React.FC<PsychometricGlossaryModalProps>
                           <span className="font-mono text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-indigo-900 bg-indigo-50 px-1.5 py-0.5 brutal-border border-indigo-200 truncate max-w-full">
                             {entry.standard}
                           </span>
+                          {isTargeted && (
+                            <span className="font-mono text-[9px] font-black uppercase bg-[#FFE600] text-[#0F172A] px-2 py-0.5 brutal-border flex items-center gap-1 animate-pulse">
+                              <Sparkles size={10} />
+                              REQUESTED INFO
+                            </span>
+                          )}
                         </div>
                         <h3 className="font-display font-black text-base sm:text-xl text-[#0F172A] leading-tight">
                           {entry.term}

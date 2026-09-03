@@ -14,6 +14,8 @@
         "primaryArchetypeId": { "type": "string", "maxLength": 64 },
         "archetypeTitle": { "type": "string", "maxLength": 100 },
         "house": { "type": "string", "maxLength": 50 },
+        "shareAttachmentStyle": { "type": "boolean" },
+        "shareHollandCode": { "type": "boolean" },
         "lastActive": { "type": "string", "maxLength": 64 },
         "createdAt": { "type": "string", "maxLength": 64 },
         "updatedAt": { "type": "string", "maxLength": 64 }
@@ -34,6 +36,8 @@
         "archetypeTitle": { "type": "string", "maxLength": 100 },
         "house": { "type": "string", "maxLength": 50 },
         "identityVariant": { "type": "string", "maxLength": 5 },
+        "shareAttachmentStyle": { "type": "boolean" },
+        "shareHollandCode": { "type": "boolean" },
         "attachmentStyle": { "type": "string", "maxLength": 50 },
         "hollandCode": { "type": "string", "maxLength": 10 },
         "updatedAt": { "type": "string", "maxLength": 64 }
@@ -57,19 +61,23 @@
     },
     "CompatibilityDuel": {
       "title": "CompatibilityDuel",
-      "description": "Two-person psychometric comparison challenge session",
+      "description": "Two-person psychometric comparison challenge session with privacy-preserving derived summaries",
       "type": "object",
       "properties": {
         "duelId": { "type": "string", "maxLength": 128 },
         "inviterUid": { "type": "string", "maxLength": 128 },
         "inviterName": { "type": "string", "maxLength": 100 },
         "inviterArchetypeId": { "type": "string", "maxLength": 64 },
+        "inviterHollandCode": { "type": "string", "maxLength": 10 },
+        "inviterAttachmentStyle": { "type": "string", "maxLength": 50 },
         "inviteeUid": { "type": "string", "maxLength": 128 },
         "inviteeName": { "type": "string", "maxLength": 100 },
         "inviteeArchetypeId": { "type": "string", "maxLength": 64 },
+        "inviteeHollandCode": { "type": "string", "maxLength": 10 },
+        "inviteeAttachmentStyle": { "type": "string", "maxLength": 50 },
         "status": { "type": "string", "enum": ["pending", "completed"] },
         "compatibilityScore": { "type": "number" },
-        "chemistryGrade": { "type": "string", "maxLength": 20 },
+        "chemistryGrade": { "type": "string", "maxLength": 40 },
         "createdAt": { "type": "string", "maxLength": 64 },
         "updatedAt": { "type": "string", "maxLength": 64 }
       },

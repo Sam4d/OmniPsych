@@ -48,6 +48,8 @@ export const AssessmentEngine: React.FC<AssessmentEngineProps> = ({
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [hoveredValue, setHoveredValue] = useState<number | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const isSensitiveTest = testId === 'shadow-fast' || testId === 'neuro-fast';
+  const [hasConsentedSensitive, setHasConsentedSensitive] = useState<boolean>(!isSensitiveTest);
 
   const currentQuestion = questions[currentIndex];
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
@@ -97,6 +99,63 @@ export const AssessmentEngine: React.FC<AssessmentEngineProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSelectAnswer, currentIndex, questions.length, currentAnswer]);
+
+  // Sensitive Domain Consent Gate
+  if (!hasConsentedSensitive) {
+    return (
+      <div className="min-h-[80vh] flex flex-col justify-center max-w-2xl mx-auto py-8 px-4 animate-in fade-in">
+        <div className="brutal-card p-6 sm:p-8 bg-white brutal-shadow-xl space-y-6">
+          <div className="flex items-center gap-3 border-b-2 border-[#0F172A] pb-4">
+            <div className="w-12 h-12 bg-[#0F172A] text-[#FFE600] brutal-border flex items-center justify-center font-display font-black text-2xl shrink-0">
+              🛡️
+            </div>
+            <div>
+              <span className="brutal-badge bg-amber-200 text-amber-950 text-xs font-mono font-bold">
+                SENSITIVE DOMAIN DISCLOSURE
+              </span>
+              <h2 className="font-display font-black text-xl sm:text-2xl text-[#0F172A] mt-1">
+                {title}
+              </h2>
+            </div>
+          </div>
+
+          <div className="space-y-4 font-mono text-xs text-slate-700 leading-relaxed">
+            <p className="bg-amber-50 p-3.5 brutal-border border-amber-300 text-amber-950 font-bold">
+              Notice: This module measures self-reported psychological orientations across subclinical cognitive patterns or defensive strategies.
+            </p>
+
+            <ul className="space-y-2 list-disc list-inside bg-slate-50 p-4 brutal-border">
+              <li>
+                <strong>Non-Clinical Scope:</strong> This questionnaire is strictly for personal reflection and psychometric education. It is <strong>NOT</strong> a clinical diagnostic assessment for psychiatric disorders or neurodevelopmental conditions.
+              </li>
+              <li>
+                <strong>Data Privacy:</strong> Your individual item answers and derived subclinical indicators remain private to your device/session unless you explicitly opt in to share summary archetypes.
+              </li>
+              <li>
+                <strong>Voluntary Participation:</strong> You may exit or skip this module at any point without impacting your core archetype passport.
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+            <button
+              onClick={onCancel}
+              className="brutal-btn bg-white text-slate-700 hover:bg-slate-100 px-4 py-2.5 font-mono text-xs font-bold"
+            >
+              CANCEL & RETURN
+            </button>
+            <button
+              onClick={() => setHasConsentedSensitive(true)}
+              className="brutal-btn bg-[#0F172A] text-white hover:bg-slate-800 px-6 py-3 font-mono text-xs font-black flex items-center justify-center gap-2"
+            >
+              <span>I UNDERSTAND & CONSENT TO PROCEED</span>
+              <ArrowRight size={14} className="text-[#FFE600]" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-between max-w-4xl mx-auto py-4 px-3 sm:px-6">
@@ -335,6 +394,11 @@ export const AssessmentEngine: React.FC<AssessmentEngineProps> = ({
             </>
           )}
         </button>
+      </div>
+
+      {/* Non-Clinical Educational Scope Footer */}
+      <div className="mt-4 pt-3 border-t border-slate-200 text-center font-mono text-[10px] text-slate-500">
+        OmniPsyche CAT Engine • Self-Reported Psychometric Education & Personal Reflection • Not for Clinical Diagnosis
       </div>
     </div>
   );

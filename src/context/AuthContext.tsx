@@ -9,13 +9,19 @@ import {
   signInWithEmailLink, 
   signOut, 
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  deleteUser
 } from 'firebase/auth';
 import { 
   doc, 
   getDoc, 
+  getDocs,
   setDoc, 
-  updateDoc 
+  updateDoc,
+  deleteDoc,
+  collection,
+  query,
+  where
 } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestoreErrors';
@@ -34,6 +40,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   syncVectorToCloud: (vector: UserPsychologicalVector) => Promise<void>;
   updateUserProfileData: (data: Partial<UserProfile>) => Promise<void>;
+  exportUserData: () => Promise<Record<string, any>>;
+  deleteUserAccountAndData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -79,7 +87,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           updatedAt: now,
         });
       } else {
-        // Create brand new profile
+        // Create brand new profile with privacy defaults (opt-out of sensitive trait sharing)
         const friendCode = generateFriendCode();
         const displayName = customDisplayName || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Omni Explorer');
         const username = customUsername || (firebaseUser.email ? firebaseUser.email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') : `user_${Math.floor(Math.random() * 9000 + 1000)}`);
@@ -92,6 +100,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           username,
           friendCode,
           avatarColor,
+          shareAttachmentStyle: false, // Default opt-in privacy gate
+          shareHollandCode: false,     // Default opt-in privacy gate
           lastActive: now,
           createdAt: now,
           updatedAt: now,
@@ -103,10 +113,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           username,
           friendCode,
           avatarColor,
-          primaryArchetypeId: 'arch_architect',
+          primaryArchetypeId: 'intj',
           archetypeTitle: 'The Grand Architect',
           house: 'The Strategists',
           identityVariant: 'A',
+          shareAttachmentStyle: false,
+          shareHollandCode: false,
           updatedAt: now,
         };
 
@@ -224,24 +236,53 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const publicDocRef = doc(db, 'public_profiles', user.uid);
 
     try {
+      // Build trajectory snapshot
+      const currentHistory = userProfile?.vectorHistory || [];
+      const newSnapshot = {
+        date: now,
+        archetypeId: vector.calculatedArchetypeId,
+        archetypeCode: archetype.code,
+        variant: vector.identityVariant,
+        conscientiousness: vector.hexaco.conscientiousness,
+        openness: vector.hexaco.openness,
+        extraversion: vector.hexaco.extraversion,
+        agreeableness: vector.hexaco.agreeableness,
+        emotionality: vector.hexaco.emotionality,
+        honestyHumility: vector.hexaco.honestyHumility,
+        eqScore: vector.traitEq.score,
+      };
+      const updatedHistory = [...currentHistory, newSnapshot].slice(-10); // Keep last 10 snapshots
+
       const updatedProfile: Partial<UserProfile> = {
         primaryArchetypeId: vector.calculatedArchetypeId,
         archetypeTitle: archetype?.title || 'Psychometric Pioneer',
         house: archetype?.house || 'The Strategists',
         identityVariant: vector.identityVariant,
         psychologicalVector: vector,
+        vectorHistory: updatedHistory,
         updatedAt: now,
       };
 
-      const updatedPublic: Partial<PublicProfile> = {
+      // Check user privacy opt-ins before publishing to public directory
+      const isSharingAttachment = userProfile?.shareAttachmentStyle ?? false;
+      const isSharingHolland = userProfile?.shareHollandCode ?? false;
+
+      const updatedPublic: Record<string, any> = {
         primaryArchetypeId: vector.calculatedArchetypeId,
         archetypeTitle: archetype?.title || 'Psychometric Pioneer',
         house: archetype?.house || 'The Strategists',
         identityVariant: vector.identityVariant,
-        attachmentStyle: vector.attachment.style,
-        hollandCode: vector.riasec.hollandCode,
+        shareAttachmentStyle: isSharingAttachment,
+        shareHollandCode: isSharingHolland,
         updatedAt: now,
       };
+
+      if (isSharingAttachment) {
+        updatedPublic.attachmentStyle = vector.attachment.style;
+      }
+      if (isSharingHolland) {
+        updatedPublic.hollandCode = vector.riasec.hollandCode;
+      }
 
       await updateDoc(userDocRef, updatedProfile);
       await updateDoc(publicDocRef, updatedPublic);
@@ -262,17 +303,116 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const payload = { ...data, updatedAt: now };
       await updateDoc(userDocRef, payload);
       
-      const publicPayload: Partial<PublicProfile> = {
+      const publicPayload: Record<string, any> = {
         updatedAt: now,
       };
-      if (data.displayName) publicPayload.displayName = data.displayName;
-      if (data.username) publicPayload.username = data.username;
-      if (data.avatarColor) publicPayload.avatarColor = data.avatarColor;
+      if (data.displayName !== undefined) publicPayload.displayName = data.displayName;
+      if (data.username !== undefined) publicPayload.username = data.username;
+      if (data.avatarColor !== undefined) publicPayload.avatarColor = data.avatarColor;
+      if (data.shareAttachmentStyle !== undefined) {
+        publicPayload.shareAttachmentStyle = data.shareAttachmentStyle;
+        if (data.shareAttachmentStyle && userProfile?.psychologicalVector?.attachment?.style) {
+          publicPayload.attachmentStyle = userProfile.psychologicalVector.attachment.style;
+        }
+      }
+      if (data.shareHollandCode !== undefined) {
+        publicPayload.shareHollandCode = data.shareHollandCode;
+        if (data.shareHollandCode && userProfile?.psychologicalVector?.riasec?.hollandCode) {
+          publicPayload.hollandCode = userProfile.psychologicalVector.riasec.hollandCode;
+        }
+      }
 
       await updateDoc(publicDocRef, publicPayload);
       setUserProfile(prev => prev ? { ...prev, ...payload } : null);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+    }
+  };
+
+  /**
+   * P3 Data Governance: Download user data package in compliant JSON format
+   */
+  const exportUserData = async (): Promise<Record<string, any>> => {
+    const exportPackage: Record<string, any> = {
+      exportTimestamp: new Date().toISOString(),
+      platform: 'OmniPsyche Psychometric Platform',
+      userProfile: userProfile || null,
+      localVectors: localStorage.getItem('omnipsyche_user_vector_v1') ? JSON.parse(localStorage.getItem('omnipsyche_user_vector_v1')!) : null,
+    };
+
+    if (user) {
+      try {
+        // Fetch friends list
+        const friendsSnap = await getDocs(collection(db, 'users', user.uid, 'friends'));
+        exportPackage.friends = friendsSnap.docs.map(d => d.data());
+
+        // Fetch user's duels
+        const qDuelsInviter = query(collection(db, 'compatibility_duels'), where('inviterUid', '==', user.uid));
+        const duelsSnap = await getDocs(qDuelsInviter);
+        exportPackage.createdDuels = duelsSnap.docs.map(d => d.data());
+      } catch (err) {
+        console.warn('Could not fetch all subcollections for export', err);
+      }
+    }
+
+    return exportPackage;
+  };
+
+  /**
+   * P3 Data Governance: Completely delete user account, Firestore profile, and subcollections
+   */
+  const deleteUserAccountAndData = async (): Promise<void> => {
+    if (!user) {
+      localStorage.clear();
+      setUserProfile(null);
+      return;
+    }
+
+    const currentUid = user.uid;
+
+    try {
+      // 1. Delete friends subcollection documents
+      const friendsSnap = await getDocs(collection(db, 'users', currentUid, 'friends'));
+      for (const friendDoc of friendsSnap.docs) {
+        await deleteDoc(friendDoc.ref);
+      }
+
+      // 2. Delete private user profile doc
+      await deleteDoc(doc(db, 'users', currentUid));
+
+      // 3. Delete public profile doc
+      await deleteDoc(doc(db, 'public_profiles', currentUid));
+
+      // 4. Delete created duels
+      try {
+        const qDuels = query(collection(db, 'compatibility_duels'), where('inviterUid', '==', currentUid));
+        const duelsSnap = await getDocs(qDuels);
+        for (const duelDoc of duelsSnap.docs) {
+          await deleteDoc(duelDoc.ref);
+        }
+      } catch (e) {
+        console.warn('Could not clean up all duels during deletion', e);
+      }
+
+      // 5. Clear local storage
+      localStorage.clear();
+
+      // 6. Delete Firebase Auth user
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        await deleteUser(currentUser);
+      }
+
+      setUserProfile(null);
+      setUser(null);
+    } catch (error) {
+      console.error('Account deletion encountered an issue:', error);
+      // Even if cloud deletion had partial errors, sign out & clear local data
+      await signOut(auth);
+      localStorage.clear();
+      setUserProfile(null);
+      setUser(null);
+      throw error;
     }
   };
 
@@ -290,6 +430,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
         syncVectorToCloud,
         updateUserProfileData,
+        exportUserData,
+        deleteUserAccountAndData,
       }}
     >
       {children}

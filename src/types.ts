@@ -207,6 +207,21 @@ export interface UserProfile {
   house?: GrandHouse;
   identityVariant?: IdentityVariant;
   psychologicalVector?: UserPsychologicalVector;
+  shareAttachmentStyle?: boolean;
+  shareHollandCode?: boolean;
+  vectorHistory?: Array<{
+    date: string;
+    archetypeId: string;
+    archetypeCode: string;
+    variant: IdentityVariant;
+    conscientiousness: number;
+    openness: number;
+    extraversion: number;
+    agreeableness: number;
+    emotionality: number;
+    honestyHumility: number;
+    eqScore: number;
+  }>;
   lastActive: string;
   createdAt: string;
   updatedAt: string;
@@ -222,6 +237,8 @@ export interface PublicProfile {
   archetypeTitle: string;
   house: GrandHouse;
   identityVariant: IdentityVariant;
+  shareAttachmentStyle?: boolean;
+  shareHollandCode?: boolean;
   attachmentStyle?: string;
   hollandCode?: string;
   bio?: string;
@@ -243,11 +260,13 @@ export interface CompatibilityDuel {
   inviterUid: string;
   inviterName: string;
   inviterArchetypeId: string;
-  inviterVector?: UserPsychologicalVector;
+  inviterHollandCode?: string;
+  inviterAttachmentStyle?: string;
   inviteeUid?: string;
   inviteeName?: string;
   inviteeArchetypeId?: string;
-  inviteeVector?: UserPsychologicalVector;
+  inviteeHollandCode?: string;
+  inviteeAttachmentStyle?: string;
   status: 'pending' | 'completed';
   compatibilityScore?: number;
   chemistryGrade?: string;
@@ -257,3 +276,31 @@ export interface CompatibilityDuel {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CompanyMember {
+  uid: string;
+  displayName: string;
+  role: string;
+  archetypeId: string;
+  archetypeTitle: string;
+  variant: 'A' | 'T';
+  house: GrandHouse;
+  avatarColor: string;
+  isAdmin: boolean;
+  joinedAt: string;
+  vector?: UserPsychologicalVector;
+}
+
+export interface CompanyTeam {
+  id: string;
+  name: string;
+  companyCode: string;
+  adminUid: string;
+  adminName: string;
+  industry?: string;
+  department?: string;
+  members: CompanyMember[];
+  createdAt: string;
+  updatedAt: string;
+}
+

@@ -65,7 +65,7 @@ service cloud.firestore {
     // Public Profiles (for friend discovery, leaderboards & comparison)
     match /public_profiles/{userId} {
       allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow list: if isSignedIn() && request.query.limit <= 10;
       
       allow create: if isOwner(userId)
         && isValidId(userId)
@@ -84,7 +84,11 @@ service cloud.firestore {
 
     // Compatibility Duels & Invites
     match /compatibility_duels/{duelId} {
-      allow get: if isSignedIn() || true; // Allow landing on challenge invite link
+      allow get: if resource.data.status == 'pending'
+        || (isSignedIn() && (
+             request.auth.uid == resource.data.inviterUid ||
+             request.auth.uid == resource.data.inviteeUid
+           ));
       allow list: if isSignedIn() && (
         resource.data.inviterUid == request.auth.uid || 
         resource.data.inviteeUid == request.auth.uid
@@ -112,6 +116,28 @@ service cloud.firestore {
         );
 
       allow delete: if isSignedIn() && existing().inviterUid == request.auth.uid;
+    }
+
+    // B2B Companies & Workplace Teams
+    match /companies/{companyId} {
+      allow get: if true; // Allow loading company by code/link
+      allow list: if isSignedIn();
+      
+      allow create: if isSignedIn()
+        && isValidId(companyId)
+        && incoming().id == companyId
+        && incoming().adminUid == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && incoming().id == existing().id
+        && (
+          // Admin can manage team or rename
+          existing().adminUid == request.auth.uid ||
+          // Members can join/leave
+          incoming().companyCode == existing().companyCode
+        );
+
+      allow delete: if isSignedIn() && existing().adminUid == request.auth.uid;
     }
   }
 }

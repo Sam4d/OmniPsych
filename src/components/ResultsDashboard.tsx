@@ -99,7 +99,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           <span className="text-slate-600 hidden md:inline">LAST UPDATED: {vector.completionDate}</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
           <button
             onClick={() => onOpenGlossary()}
             className="brutal-btn bg-indigo-50 text-indigo-950 px-3 py-1.5 text-xs flex items-center justify-center gap-1.5"
@@ -107,22 +107,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           >
             <BookOpen size={13} className="text-indigo-600" />
             <span>SCIENCE GUIDE</span>
-          </button>
-          <button
-            onClick={onOpenInstagramStory}
-            className="brutal-btn bg-[#FF6B6B] text-white px-3 py-1.5 text-xs flex items-center justify-center gap-1.5"
-            title="Export 9:16 Instagram Story Card"
-          >
-            <Instagram size={13} />
-            <span>STORY (9:16)</span>
-          </button>
-          <button
-            onClick={onOpenPrintableReport}
-            className="brutal-btn bg-[#FFE600] text-[#0F172A] px-3 py-1.5 text-xs font-black flex items-center justify-center gap-1.5"
-            title="Export Printable PDF Psychometric Report"
-          >
-            <Printer size={13} />
-            <span>PDF REPORT</span>
           </button>
           <button
             onClick={onOpenDossier}
@@ -975,6 +959,16 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         >
           RETAKE OMNI-ASSESSMENT
         </button>
+      </div>
+
+      {/* Mandatory Non-Clinical Assessment Scope Disclosure Footer */}
+      <div className="bg-[#FFFDF7] p-4 brutal-border border-slate-300 text-center font-mono text-[11px] text-slate-600 space-y-1">
+        <p className="font-bold text-slate-800">
+          ⚖️ SCIENTIFIC & ETHICAL SCOPE DISCLOSURE
+        </p>
+        <p>
+          OmniPsyche is designed for personal development, interpersonal communication, and psychometric education based on empirical models (HEXACO PI-R, Holland RIASEC, ECR-R, TEIQue-SF). It is not a medical, psychiatric, or clinical diagnostic instrument.
+        </p>
       </div>
     </div>
   );

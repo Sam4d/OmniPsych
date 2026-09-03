@@ -30,6 +30,114 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString(), aiAvailable: !!process.env.GEMINI_API_KEY });
 });
 
+// Server-side compatibility computation algorithm (Zero exposure of raw psychometric vectors)
+function calculateCompatibility(vecA: any, vecB: any) {
+  if (!vecA || !vecB) {
+    return {
+      score: 75,
+      grade: 'B-Tier Dynamic Polar Complement',
+      synergies: ['Complementary blindspot compensation across decision axes'],
+      frictions: ['Differences in pacing and operational preferences'],
+      communicationProtocol: 'Establish clear communication intent and provide structured reflection time.'
+    };
+  }
+
+  const hA = vecA.hexaco || { honestyHumility: 70, conscientiousness: 70, openness: 70, extraversion: 50, agreeableness: 50 };
+  const hB = vecB.hexaco || { honestyHumility: 70, conscientiousness: 70, openness: 70, extraversion: 50, agreeableness: 50 };
+
+  const hhDiff = Math.abs((hA.honestyHumility ?? 70) - (hB.honestyHumility ?? 70));
+  const cDiff = Math.abs((hA.conscientiousness ?? 70) - (hB.conscientiousness ?? 70));
+  const oDiff = Math.abs((hA.openness ?? 70) - (hB.openness ?? 70));
+  const eBalance = 100 - Math.abs(50 - (((hA.extraversion ?? 50) + (hB.extraversion ?? 50)) / 2));
+  const meanAgreeableness = ((hA.agreeableness ?? 50) + (hB.agreeableness ?? 50)) / 2;
+
+  const styleA = vecA.attachment?.style || 'Secure';
+  const styleB = vecB.attachment?.style || 'Secure';
+  let attachmentBonus = 80;
+
+  if (styleA === 'Secure' && styleB === 'Secure') attachmentBonus = 98;
+  else if (styleA === 'Secure' || styleB === 'Secure') attachmentBonus = 88;
+  else if (
+    (styleA === 'Anxious-Preoccupied' && styleB === 'Dismissive-Avoidant') ||
+    (styleA === 'Dismissive-Avoidant' && styleB === 'Anxious-Preoccupied')
+  ) attachmentBonus = 62;
+  else attachmentBonus = 72;
+
+  const eqA = vecA.traitEq?.score ?? 75;
+  const eqB = vecB.traitEq?.score ?? 75;
+  const meanEq = (eqA + eqB) / 2;
+
+  const codesA = vecA.riasec?.topCodes || [];
+  const codesB = vecB.riasec?.topCodes || [];
+  const sharedCodes = codesA.filter((c: string) => codesB.includes(c)).length;
+  const riasecBonus = sharedCodes === 3 ? 95 : sharedCodes === 2 ? 85 : sharedCodes === 1 ? 75 : 65;
+
+  const rawScore = (
+    (100 - hhDiff) * 0.20 +
+    (100 - cDiff) * 0.15 +
+    (100 - oDiff) * 0.15 +
+    eBalance * 0.10 +
+    meanAgreeableness * 0.10 +
+    attachmentBonus * 0.15 +
+    meanEq * 0.10 +
+    riasecBonus * 0.05
+  );
+
+  const score = Math.max(45, Math.min(99, Math.round(rawScore)));
+
+  let grade = 'A-Tier Catalytic Synergy';
+  if (score >= 90) grade = 'S-Tier Harmonic Resonator';
+  else if (score >= 82) grade = 'A-Tier Catalytic Synergy';
+  else if (score >= 74) grade = 'B-Tier Dynamic Polar Complement';
+  else if (score >= 65) grade = 'C-Tier High-Growth Friction';
+  else grade = 'D-Tier Volatile Polarity';
+
+  const synergies: string[] = [];
+  if (hhDiff < 20) synergies.push('Shared moral integrity & congruent authentic baseline');
+  if (cDiff < 25) synergies.push('Synchronized operational rhythm & mutual reliability');
+  if (oDiff < 25) synergies.push('Parallel intellectual curiosity & conceptual exploration');
+  if (meanEq > 75) synergies.push('High emotional decompression capacity during high-pressure sprints');
+  if (attachmentBonus >= 85) synergies.push('Safe psychological vulnerability loop without panic withdrawal');
+  if (synergies.length < 3) synergies.push('Complementary blindspot compensation across decision axes');
+
+  const frictions: string[] = [];
+  if (hhDiff >= 25) frictions.push('Divergence in strategic transparency vs tactical gamesmanship');
+  if (cDiff >= 30) frictions.push('Mismatched tolerances for spontaneity vs structured planning');
+  if (
+    (styleA === 'Anxious-Preoccupied' && styleB === 'Dismissive-Avoidant') ||
+    (styleA === 'Dismissive-Avoidant' && styleB === 'Anxious-Preoccupied')
+  ) frictions.push('Risk of Anxious-Avoidant escalation during conflict cooldown periods');
+  if (meanAgreeableness < 50) frictions.push('Blunt directness may bypass psychological buffer during debates');
+  if (frictions.length === 0) frictions.push('Risk of groupthink or avoidance of productive ideological confrontation');
+
+  const archAName = vecA.archetypeName || 'Challenger';
+  const archBName = vecB.archetypeName || 'Partner';
+  const communicationProtocol = `When ${archAName} collaborates with ${archBName}, balance analytical structure with explicit emotional check-ins. Establish clear intent before delivering constructive critiques, and allow structured asynchronous reflection time before resolving major impasses.`;
+
+  return {
+    score,
+    grade,
+    synergies: synergies.slice(0, 3),
+    frictions: frictions.slice(0, 2),
+    communicationProtocol,
+  };
+}
+
+// Compatibility Computation Endpoint
+app.post("/api/compute-compatibility", (req, res) => {
+  try {
+    const { vecA, vecB } = req.body;
+    if (!vecA || !vecB) {
+      return res.status(400).json({ error: "Both user vectors are required to calculate compatibility" });
+    }
+    const result = calculateCompatibility(vecA, vecB);
+    res.json(result);
+  } catch (err: any) {
+    console.error("Error in /api/compute-compatibility:", err);
+    res.status(500).json({ error: err.message || "Failed to compute compatibility" });
+  }
+});
+
 // Psyche AI Companion Chat Endpoint
 app.post("/api/psyche-chat", async (req, res) => {
   try {
@@ -97,11 +205,11 @@ app.post("/api/roast-hype", async (req, res) => {
     const isRoast = mode === "roast";
 
     if (!ai) {
-      if (isRoast) {
+        if (isRoast) {
         return res.json({
-          result: `You have 47 Notion dashboards for 'optimal life systems' but haven't replied to your mom's text in three weeks. You claim to value 'pure logic,' yet you will spend 6 hours researching mechanical keyboard switches just to write passive-aggressive Slack messages with 20% more tactility. You don't have emotional boundaries; you have a firewall built out of intellectualized defense mechanisms.`,
+          result: `You have 47 Notion dashboards for 'optimal life systems' but haven't replied to your friend's text in three days. You claim to value 'pure efficiency,' yet you will spend 6 hours researching mechanical keyboard switches just to write emails with 20% more tactility. You don't just plan projects; you architect 12-stage contingency matrices for buying groceries.`,
           headline: `47 TABS OPEN, ZERO REPLIES SENT`,
-          rating: `9.4/10 CLINICAL SASS`,
+          rating: `9.4/10 BENIGN SASS`,
         });
       } else {
         return res.json({
@@ -113,10 +221,12 @@ app.post("/api/roast-hype", async (req, res) => {
     }
 
     const prompt = isRoast
-      ? `Write an extraordinarily funny, sharp, savage, but affectionate roast of this exact personality profile:
+      ? `Write an extraordinarily funny, sharp, witty, but affectionate roast of this exact personality profile:
 Archetype: ${archetype?.name} (${archetype?.code}-${archetype?.variant}) - ${archetype?.title}.
 HEXACO Breakdown: Honesty ${userVector?.hexaco?.honestyHumility}%, Extraversion ${userVector?.hexaco?.extraversion}%, Conscientiousness ${userVector?.hexaco?.conscientiousness}%, Openness ${userVector?.hexaco?.openness}%, Emotionality ${userVector?.hexaco?.emotionality}%.
 Attachment: ${userVector?.attachment?.style}.
+
+IMPORTANT ETHICAL GUARDRAIL: Never mock or reference ADHD, neurodiversity, sensory processing, trauma, or clinical mental health conditions. Focus purely on harmless, lighthearted lifestyle quirks (e.g. over-organizing spreadsheets, 50 open browser tabs, perfectionist reading lists, overthinking social texts, gear obsessions).
 Make it 3-4 punchy sentences. Include a brutally hilarious 4-7 word uppercase HEADLINE and a funny RATING.`
       : `Write an electrifying, hyper-validating, badass 'HYPE' summary of this personality profile:
 Archetype: ${archetype?.name} (${archetype?.code}-${archetype?.variant}) - ${archetype?.title}.
@@ -134,8 +244,8 @@ Make it 3-4 inspiring sentences highlighting their superpowers, supreme rare tra
     const fullText = response.text || "";
     res.json({
       result: fullText,
-      headline: isRoast ? "UNCANNY CLINICAL DIAGNOSIS" : "TITANIC FORCE OF NATURE",
-      rating: isRoast ? "S-TIER COGNITIVE ROAST" : "TOP 0.1% UNSTOPPABLE DRIVE",
+      headline: isRoast ? "SHARP ARCHETYPE PORTRAIT" : "TITANIC FORCE OF NATURE",
+      rating: isRoast ? "S-TIER PLAYFUL ROAST" : "TOP 0.1% UNSTOPPABLE DRIVE",
     });
   } catch (error: any) {
     console.error("Error in /api/roast-hype:", error);

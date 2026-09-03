@@ -23,11 +23,11 @@ import {
 import { getArchetypeById } from '../utils/scoring';
 
 /**
- * Calculates in-depth comparative psychometric compatibility between two psychological vectors
+ * Calculates in-depth comparative psychometric compatibility between two psychological vectors or summary profiles
  */
 export function calculateCompatibilityBetweenVectors(
-  vecA: UserPsychologicalVector,
-  vecB: UserPsychologicalVector
+  vecA: any,
+  vecB: any
 ): {
   score: number;
   grade: string;
@@ -36,23 +36,23 @@ export function calculateCompatibilityBetweenVectors(
   communicationProtocol: string;
 } {
   // 1. HEXACO Distance & Synergy
-  const hA = vecA.hexaco;
-  const hB = vecB.hexaco;
+  const hA = vecA.hexaco || { honestyHumility: 75, conscientiousness: 80, openness: 80, extraversion: 50, agreeableness: 60 };
+  const hB = vecB.hexaco || { honestyHumility: 75, conscientiousness: 80, openness: 80, extraversion: 50, agreeableness: 60 };
 
   // Values alignment (Honesty-Humility & Conscientiousness benefit from similarity)
-  const hhDiff = Math.abs(hA.honestyHumility - hB.honestyHumility);
-  const cDiff = Math.abs(hA.conscientiousness - hB.conscientiousness);
-  const oDiff = Math.abs(hA.openness - hB.openness);
+  const hhDiff = Math.abs((hA.honestyHumility ?? 75) - (hB.honestyHumility ?? 75));
+  const cDiff = Math.abs((hA.conscientiousness ?? 80) - (hB.conscientiousness ?? 80));
+  const oDiff = Math.abs((hA.openness ?? 80) - (hB.openness ?? 80));
 
   // Temperament polarity (Introversion + Extraversion creates healthy balance)
-  const eBalance = 100 - Math.abs(50 - ((hA.extraversion + hB.extraversion) / 2));
+  const eBalance = 100 - Math.abs(50 - (((hA.extraversion ?? 50) + (hB.extraversion ?? 50)) / 2));
   
   // Agreeableness buffer
-  const meanAgreeableness = (hA.agreeableness + hB.agreeableness) / 2;
+  const meanAgreeableness = ((hA.agreeableness ?? 60) + (hB.agreeableness ?? 60)) / 2;
 
   // 2. Attachment Matrix Harmony
-  const styleA = vecA.attachment.style;
-  const styleB = vecB.attachment.style;
+  const styleA = vecA.attachment?.style || 'Secure';
+  const styleB = vecB.attachment?.style || 'Secure';
   let attachmentBonus = 80;
 
   if (styleA === 'Secure' && styleB === 'Secure') attachmentBonus = 98;
@@ -64,10 +64,14 @@ export function calculateCompatibilityBetweenVectors(
   else attachmentBonus = 72;
 
   // 3. Trait EQ Safety Buffer
-  const meanEq = (vecA.traitEq.score + vecB.traitEq.score) / 2;
+  const eqA = vecA.traitEq?.score ?? 80;
+  const eqB = vecB.traitEq?.score ?? 80;
+  const meanEq = (eqA + eqB) / 2;
 
   // 4. RIASEC shared wavelength
-  const sharedCodes = vecA.riasec.topCodes.filter(c => vecB.riasec.topCodes.includes(c)).length;
+  const codesA = vecA.riasec?.topCodes || [];
+  const codesB = vecB.riasec?.topCodes || [];
+  const sharedCodes = codesA.filter((c: string) => codesB.includes(c)).length;
   const riasecBonus = sharedCodes === 3 ? 95 : sharedCodes === 2 ? 85 : sharedCodes === 1 ? 75 : 65;
 
   // Weighted composite score (0-100)
@@ -222,7 +226,7 @@ export function subscribeToFriends(
 }
 
 /**
- * Create a new Compatibility Challenge / Duel
+ * Create a new Compatibility Challenge / Duel (Privacy-safe: no raw vectors stored)
  */
 export async function createCompatibilityDuel(
   inviter: UserProfile,
@@ -237,7 +241,8 @@ export async function createCompatibilityDuel(
     inviterUid: inviter.uid,
     inviterName: inviter.displayName,
     inviterArchetypeId: inviterVector.calculatedArchetypeId,
-    inviterVector,
+    inviterHollandCode: inviterVector.riasec.hollandCode,
+    inviterAttachmentStyle: inviterVector.attachment.style,
     status: 'pending',
     createdAt: now,
     updatedAt: now,
@@ -294,12 +299,14 @@ export function subscribeToDuel(
 
 /**
  * Complete a compatibility duel when invitee submits their vector
+ * Stores only derived, non-reversible compatibility summary
  */
 export async function completeCompatibilityDuel(
   duelId: string,
   inviteeName: string,
   inviteeUid: string,
-  inviteeVector: UserPsychologicalVector
+  inviteeVector: UserPsychologicalVector,
+  inviterVectorFallback?: UserPsychologicalVector
 ): Promise<CompatibilityDuel> {
   const path = `compatibility_duels/${duelId}`;
   try {
@@ -309,18 +316,63 @@ export async function completeCompatibilityDuel(
       throw new Error('Compatibility duel not found');
     }
     const currentDuel = snap.data() as CompatibilityDuel;
-    if (!currentDuel.inviterVector) {
-      throw new Error('Inviter psychological vector not present in duel');
+
+    // Derive comparison through server API or secure algorithm
+    let comparison;
+    try {
+      const inviterArchetype = getArchetypeById(currentDuel.inviterArchetypeId);
+      const inviteeArchetype = getArchetypeById(inviteeVector.calculatedArchetypeId);
+
+      const res = await fetch('/api/compute-compatibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vecA: inviterVectorFallback || {
+            calculatedArchetypeId: currentDuel.inviterArchetypeId,
+            archetypeName: inviterArchetype.name,
+            hexaco: inviterArchetype.hexacoProfile,
+            attachment: { style: currentDuel.inviterAttachmentStyle || 'Secure' },
+            riasec: {
+              topCodes: inviterArchetype.riasecPrimary,
+              hollandCode: currentDuel.inviterHollandCode || 'IAS',
+            },
+            traitEq: { score: inviterArchetype.traitEqBaseline },
+          },
+          vecB: {
+            ...inviteeVector,
+            archetypeName: inviteeArchetype.name,
+          },
+        }),
+      });
+      if (res.ok) {
+        comparison = await res.json();
+      }
+    } catch {
+      // Fallback
     }
 
-    const comparison = calculateCompatibilityBetweenVectors(currentDuel.inviterVector, inviteeVector);
+    if (!comparison) {
+      const inviterArchetype = getArchetypeById(currentDuel.inviterArchetypeId);
+      comparison = calculateCompatibilityBetweenVectors(
+        inviterVectorFallback || {
+          calculatedArchetypeId: currentDuel.inviterArchetypeId,
+          attachment: { style: currentDuel.inviterAttachmentStyle || 'Secure' },
+          riasec: { topCodes: inviterArchetype.riasecPrimary, hollandCode: currentDuel.inviterHollandCode || 'IAS' },
+          hexaco: inviterArchetype.hexacoProfile,
+          traitEq: { score: inviterArchetype.traitEqBaseline },
+        },
+        inviteeVector
+      );
+    }
+
     const now = new Date().toISOString();
 
     const updatedPayload: Partial<CompatibilityDuel> = {
       inviteeUid,
       inviteeName,
       inviteeArchetypeId: inviteeVector.calculatedArchetypeId,
-      inviteeVector,
+      inviteeHollandCode: inviteeVector.riasec.hollandCode,
+      inviteeAttachmentStyle: inviteeVector.attachment.style,
       status: 'completed',
       compatibilityScore: comparison.score,
       chemistryGrade: comparison.grade,
